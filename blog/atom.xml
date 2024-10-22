@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title>gustavderdrache - blog</title>
+    <link rel="self" type="application/atom+xml" href="https://gustavderdrache.github.io/blog/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://gustavderdrache.github.io/blog/"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2024-10-21T00:00:00+00:00</updated>
+    <id>https://gustavderdrache.github.io/blog/atom.xml</id>
+    <entry xml:lang="en">
+        <title>Terraform Module Brainrot</title>
+        <published>2024-10-21T00:00:00+00:00</published>
+        <updated>2024-10-21T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              gustavderdrache
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://gustavderdrache.github.io/blog/modules/"/>
+        <id>https://gustavderdrache.github.io/blog/modules/</id>
+        
+        <content type="html" xml:base="https://gustavderdrache.github.io/blog/modules/">&lt;p&gt;When your code structure starts with making modules first, it leads you to extremely silly places. Take this &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;terraform-aws-modules&#x2F;terraform-aws-cloudwatch&#x2F;tree&#x2F;master&#x2F;modules&#x2F;log-group&quot;&gt;CloudWatch log group module&lt;&#x2F;a&gt;, which I have reproduced in its entirety below:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;hcl&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-hcl &quot;&gt;&lt;code class=&quot;language-hcl&quot; data-lang=&quot;hcl&quot;&gt;&lt;span&gt;resource &amp;quot;aws_cloudwatch_log_group&amp;quot; &amp;quot;this&amp;quot; {
+&lt;&#x2F;span&gt;&lt;span&gt;  count = var.create ? 1 : 0
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  name              = var.name
+&lt;&#x2F;span&gt;&lt;span&gt;  name_prefix       = var.name_prefix
+&lt;&#x2F;span&gt;&lt;span&gt;  retention_in_days = var.retention_in_days
+&lt;&#x2F;span&gt;&lt;span&gt;  kms_key_id        = var.kms_key_id
+&lt;&#x2F;span&gt;&lt;span&gt;  log_group_class   = var.log_group_class
+&lt;&#x2F;span&gt;&lt;span&gt;  skip_destroy      = var.skip_destroy
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  tags = var.tags
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;What is this? Why is it here? What possible purpose could making this a module serve? Why not just… create a log group?&lt;&#x2F;p&gt;
+&lt;p&gt;If you think you have an answer… think carefully. In my experience, Terraform seems to treat modules slightly differently with respect to meta-arguments, so mixing things like &lt;code&gt;count&lt;&#x2F;code&gt; and &lt;code&gt;depends_on&lt;&#x2F;code&gt; can cause issues. Module handling lags behind (sometimes far behind) resource handling. This means that by reaching for modules first for everything, you&#x27;ve given up Terraform&#x27;s resource handling for more limited functionality. Why? Why do this?&lt;&#x2F;p&gt;
+&lt;p&gt;What&#x27;s worse about this is that the module interface can sometimes create or hide really awkward behavior. For example, take &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;terraform-aws-modules&#x2F;terraform-aws-dynamodb-table&#x2F;tree&#x2F;master&quot;&gt;the DynamoDB module&lt;&#x2F;a&gt;. This module has some quirks: because it&#x27;s behind a module, you can&#x27;t add extra ignores, so the module forces you to migrate between no less than three different resources in various scenarios. For example, if you change autoscaling, then you have to heed this warning:&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;There are two separate Terraform resources used for the DynamoDB table: one is for when any autoscaling is enabled the other when disabled. If your table is already created and then you change the variable autoscaling_enabled then your table will be recreated by Terraform. In this case you will need to move the old &lt;code&gt;aws_dynamodb_table&lt;&#x2F;code&gt; resource that is being &lt;code&gt;destroyed&lt;&#x2F;code&gt; to the new resource that is being &lt;code&gt;created&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;p&gt;What&#x27;s so different about an autoscaled DynamoDB table? As of the time of writing (&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;terraform-aws-modules&#x2F;terraform-aws-dynamodb-table&#x2F;tree&#x2F;e47cf5f0d2636bd5018b4a65e988295d5360cbb6&quot;&gt;commit &lt;code&gt;e47cf5f0d2636bd5018b4a65e988295d5360cbb6&lt;&#x2F;code&gt;&lt;&#x2F;a&gt;), the full difference between the two tables is below:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;diff&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-diff &quot;&gt;&lt;code class=&quot;language-diff&quot; data-lang=&quot;diff&quot;&gt;&lt;span&gt;@@ -1,5 +1,5 @@
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;-resource &amp;quot;aws_dynamodb_table&amp;quot; &amp;quot;this&amp;quot; {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;-  count = var.create_table &amp;amp;&amp;amp; !var.autoscaling_enabled ? 1 : 0
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;+resource &amp;quot;aws_dynamodb_table&amp;quot; &amp;quot;autoscaled&amp;quot; {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;+  count = var.create_table &amp;amp;&amp;amp; var.autoscaling_enabled &amp;amp;&amp;amp; !var.ignore_changes_global_secondary_index ? 1 : 0
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;   name                        = var.name
+&lt;&#x2F;span&gt;&lt;span&gt;   billing_mode                = var.billing_mode
+&lt;&#x2F;span&gt;&lt;span&gt;@@ -136,4 +136,8 @@
+&lt;&#x2F;span&gt;&lt;span&gt;     delete = lookup(var.timeouts, &amp;quot;delete&amp;quot;, null)
+&lt;&#x2F;span&gt;&lt;span&gt;     update = lookup(var.timeouts, &amp;quot;update&amp;quot;, null)
+&lt;&#x2F;span&gt;&lt;span&gt;   }
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;+
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;+  lifecycle {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;+    ignore_changes = [read_capacity, write_capacity]
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;+  }
+&lt;&#x2F;span&gt;&lt;span&gt; }
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The difference is… nothing. It&#x27;s kind of worse than nothing, actually. The presence of the autoscaling variable is strictly to ignore the capacity changes, and since this can&#x27;t be dynamic, the fact that this one table is wrapped in a module forces you to do &lt;em&gt;more&lt;&#x2F;em&gt; work than if you simply had direct access to the resource definition—you have to perform &lt;code&gt;terraform state mv&lt;&#x2F;code&gt; commands to switch, instead of just updating a few lines of source code! Again, in a case like this, why reach for a module at all? What is being gained here that couldn&#x27;t be better served by just writing the resource out, especially if the module functionality actually impedes development?&lt;&#x2F;p&gt;
+&lt;p&gt;These aren&#x27;t isolated incidents, either. You can find this kind of nonsense everywhere, riddled with the same flaws—&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;terraform-aws-modules&#x2F;terraform-aws-ssm-parameter&quot;&gt;SSM parameters&lt;&#x2F;a&gt;, &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;terraform-aws-modules&#x2F;terraform-aws-key-pair&quot;&gt;EC2 key pairs&lt;&#x2F;a&gt;, and so on. Is the overhead worth it? Why?&lt;&#x2F;p&gt;
+&lt;p&gt;What are these modules meant to &lt;em&gt;do&lt;&#x2F;em&gt;, other than add overhead for the sake of being able to say &quot;Yes, we&#x27;re using modules!&quot; What value does that bring?&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>
