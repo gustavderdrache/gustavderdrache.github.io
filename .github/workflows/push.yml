@@ -1,0 +1,16 @@
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to GH Pages
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: zolacti/on@v1

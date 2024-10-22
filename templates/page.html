@@ -1,0 +1,20 @@
+{% import "_macros.html" as macros -%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page.title }} | {{ config.title }}</title>
+  {{ macros::stylesheet(name="style") }}
+</head>
+<body>
+  <header>
+    <h1>{{ page.title }}</h1>
+    <p>{{ page.word_count }} word(s) | {{ page.reading_time }} min reading time</p>
+  </header>
+
+  <main>
+    {{ page.content | safe }}
+  </main>
+</body>
+</html>

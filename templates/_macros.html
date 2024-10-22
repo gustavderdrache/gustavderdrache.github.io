@@ -1,0 +1,7 @@
+{% macro stylesheet(name) -%}
+  <link rel="stylesheet" href="/{{ name }}.css"
+    {%- if config.mode == "build" -%}
+    {{" "}}integrity="sha384-{{ get_hash(path="public/" ~ name ~ ".css", sha_type=384, base64=true) | safe}}"
+    {%- endif -%}
+  />
+{%- endmacro stylesheet %}
