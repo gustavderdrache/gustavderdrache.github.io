@@ -1,6 +1,6 @@
 ---
 title: blog
 
-generate_feed: true
+generate_feeds: true
 sort_by: date
 ---
