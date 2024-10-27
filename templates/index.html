@@ -1,11 +1,14 @@
+{% import "_macros.html" as macros -%}
 <!DOCTYPE html>
 <html lang="{{ lang }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ section.title }} | {{ config.title }}</title>
+  {{ macros::stylesheet(name="style") }}
 </head>
 <body>
+  <h1>{{ config.title }}</h1>
   <main>{{ section.content | safe }}</main>
 </body>
 </html>
