@@ -4,8 +4,32 @@
     <link rel="self" type="application/atom+xml" href="https://gustavderdrache.github.io/blog/atom.xml"/>
     <link rel="alternate" type="text/html" href="https://gustavderdrache.github.io/blog/"/>
     <generator uri="https://www.getzola.org/">Zola</generator>
-    <updated>2024-10-21T00:00:00+00:00</updated>
+    <updated>2024-10-26T00:00:00+00:00</updated>
     <id>https://gustavderdrache.github.io/blog/atom.xml</id>
+    <entry xml:lang="en">
+        <title>Good Terraform modules</title>
+        <published>2024-10-26T00:00:00+00:00</published>
+        <updated>2024-10-26T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              gustavderdrache
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://gustavderdrache.github.io/blog/good-modules/"/>
+        <id>https://gustavderdrache.github.io/blog/good-modules/</id>
+        
+        <content type="html" xml:base="https://gustavderdrache.github.io/blog/good-modules/">&lt;p&gt;It&#x27;s no secret that I dislike &lt;a href=&quot;&#x2F;blog&#x2F;modules&quot;&gt;certain Terraform modules&lt;&#x2F;a&gt;. But rather than continuing to rant about various other modules, I thought it&#x27;d be instructive to think about good module design and how to create a useful ecosystem. That &quot;useful&quot; part is what I want to focus on—because I think a lot of Terraform modules expose way too many options, simply acting as multi-resource facades, rather than actually saving users time and work.&lt;&#x2F;p&gt;
+&lt;p&gt;Imagine a few foundational modules that covered the kinds of scenarios an organization often encounters. For example, a basic VPC module that follows organizational practices and only exposes the knobs and levers a user needs to think about, such as the name and optionally a private IPv4 CIDR range. The module&#x27;s authors have ensured that it meets requirements, such as creating flow logs, route tables, and maybe even network ACLs. For sensitive environments, another module could be created where PrivateLink endpoints are all created and network access is locked down.&lt;&#x2F;p&gt;
+&lt;p&gt;Fundamentally, this is the shift I want to think about: modules should be a useful package to at least partially answer &quot;what are you creating?&quot; The answer is not &quot;a VPC&quot;, it&#x27;s &quot;a public-facing marketing site&quot; or &quot;a log aggregation service.&quot;&lt;&#x2F;p&gt;
+&lt;p&gt;When this shift happens, it opens up a few things: you can create, for example, a module to deploy an ECS clusted based on the usual standards. Say your organization prefers to deploy applications on Fargate, or has a specific AMI required for EC2-based capacity providers. The module can just handle that. There can be more modules if such things are required, but again, they should be compositional units: your proposal for a workload in your organization can turn into grabbing those modules off the shelf: this module uses a non-sensitive network, deploys to ECS Fargate, and is fronted by a public-facing load balancer. There&#x27;s three modules right there, and each can require inputs that meet standards. If you require a WAF ACL for every load balancer, either hand out a standard definition or give users guidelines to follow, and pass their own WAF ACL into the load balancer module.&lt;&#x2F;p&gt;
+&lt;p&gt;A good module aids users in following guidelines, and a good module portfolio turns this into rapid delivery. As modules are updated to pick up enhancements and bug fixes, every downstream consumer benefits. For example, when the majority of your load balancers are managed by a module, you can raise the security baseline by simply updating your module&#x27;s TLS security policy. Don&#x27;t make that kind of thing configurable: users shouldn&#x27;t have to guess or consult standards. Don&#x27;t make them think any more than they have to.&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
     <entry xml:lang="en">
         <title>Terraform Module Brainrot</title>
         <published>2024-10-21T00:00:00+00:00</published>
